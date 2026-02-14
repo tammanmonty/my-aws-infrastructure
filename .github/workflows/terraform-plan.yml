@@ -1,0 +1,33 @@
+name: Terraform Plan (project branches)
+on:
+  push:
+    branches:
+      - 'project/**'
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: '1.5.0'
+
+      - name: Terraform Init
+        env:
+          TF_BACKEND_BUCKET: ${{ secrets.TF_BACKEND_BUCKET }}
+          TF_BACKEND_REGION: ${{ secrets.TF_BACKEND_REGION }}
+        run: |
+          terraform init -input=false
+
+      - name: Terraform Plan
+        run: |
+          terraform plan -input=false -var="project=${{ github.ref_name }}" -out=plan.tfplan
+
+      - name: Upload Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-${{ github.ref_name }}
+          path: plan.tfplan
